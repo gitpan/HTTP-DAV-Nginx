@@ -1,0 +1,6 @@
+Revision history for Perl extension HTTP::DAV::Nginx.
+
+0.1.0  Wed Aug 31 18:32:41 2011
+	- original version; created by h2xs 1.23 with options
+		-X HTTP::DAV::Nginx
+

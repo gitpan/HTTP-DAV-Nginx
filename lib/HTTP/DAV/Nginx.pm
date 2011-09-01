@@ -7,7 +7,7 @@ use LWP::UserAgent;
 use HTTP::Request;
 use Carp;
 
-our $VERSION = '0.1.1';
+our $VERSION = '0.1.2';
 
 #-----------
 sub new
@@ -339,9 +339,10 @@ Create a new HTTP::DAV::Nginx object;
     HTTP::DAV::Nginx -> new('http://host.org:8080/dav/', die_on_errors => 1);
 
 PARAMS:
-    die_on_errors - die if error
-    warn_on_errors - warn if error
 
+C<die_on_errors> - die if error
+
+C<warn_on_errors> - warn if error
 
 =item B<mkcol(URI)>
 
@@ -351,62 +352,50 @@ creates a new dir at the location specified by the URI
 
 creates a duplicate of the source resource identified by URI
 
-
-C<SRC_URI> - source URI
-C<DEST_URI> - destination URI
-
     $dav -> copy('/uri', '/uri2');
 
+C<SRC_URI> - source URI
+
+C<DEST_URI> - destination URI
+
 PARAMS:
-=over 4
 
-=item C<depth> - copy depth (0, infinity)
+C<depth> - copy depth (0, infinity)
 
-=item C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
+C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
 
-=back
 
 =item B<move(SRC_URI, DEST_URI, [PARAMS])>
 
 used to move a resource to the location specified by a URI
 
+    $dav -> move('/uri', '/uri2');
+
 C<SRC_URI> - source URI
 
 C<DEST_URI> - destination URI
 
-    $dav -> move('/uri', '/uri2');
-
 PARAMS:
 
-=over 4
+C<depth> - move depth (0, infinity)
 
-=item C<depth> - move depth (0, infinity)
+C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
 
-=item C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
-
-=back
-
-=item B<put(URI, DATA_TYPE => DATA)>
+=item B<put(URI, DATA_TYPE =E<gt> DATA)>
 
 used to put data in a new resource specified by a URI
 
     $dav -> put('/uri', data => 'Hello');
-    or
     $dav -> put('/uri', file => '/etc/passwd');
-    or
     $dav -> put('/uri', fh => $fh);
 
 DATA_TYPE - type of data:
 
-=over 4
+C<data> - scalar data
 
-=item C<data> - scalar data
+C<file> - filename
 
-=item C<file> - filename
-
-=item C<fh> - filehandle
-
-=back
+C<fh> - filehandle
 
 DATA - scalar data or filename or filehandle
 
@@ -415,7 +404,6 @@ DATA - scalar data or filename or filehandle
 deletes a resource at the specified
 
     $dav -> delete('/uri');
-    or 
     $dav -> delete('uri', depth => 'infinity');
 
 =item B<useragent>

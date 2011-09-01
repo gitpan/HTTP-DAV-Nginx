@@ -7,7 +7,7 @@ use LWP::UserAgent;
 use HTTP::Request;
 use Carp;
 
-our $VERSION = '0.1.0';
+our $VERSION = '0.1.1';
 
 #-----------
 sub new
@@ -25,6 +25,7 @@ sub new
 	$self -> {'url'} = $url;
 
 	$self -> {'die_on_errors'} = $param{'die_on_errors'} || 0;
+	$self -> {'warn_on_errors'} = $param{'warn_on_errors'} || 0;
 
 	bless $self, $class;
 
@@ -43,10 +44,12 @@ sub _error
 	{
 		croak $error;
 	}
-	else
+	if ($self -> {'warn_on_errors'}) 
 	{
-		$self -> {'err'} = $error; 
+		carp $error;
 	}
+	
+		$self -> {'err'} = $error; 
 }
 
 #------------------------
@@ -118,7 +121,7 @@ sub delete
 	
 	my $response = $self -> {'ua'} -> request($request);
 
-#	$request -> header('Depth' => $params{'depth'  blah blah blah));
+	$request -> header('Depth' => $params{'depth'}) if $params{'depth'};
 	
 	unless ($response -> is_success)
 	{
@@ -169,7 +172,7 @@ sub put
 		}
 	}
 	elsif (lc($data_type) eq 'fh')
-	{  blah blah blah
+	{  
 		my $buffer;
 		while (read($data, $buffer, 512))
 		{
@@ -196,12 +199,20 @@ sub copy
 	my $self     = shift;
 	my $uri      = shift;
 	my $dest_uri = shift;
-
+	my %params = @_;
+	
 	my $request = HTTP::Request->new();
 	$request -> method('COPY');
 	$request -> uri($self -> {'url'} . _clear_begining_slash($uri));
 	$request -> header('Destination' => $dest_uri);
 	
+	$request -> header('Depth' => $params{'depth'}) if $params{'depth'};
+	if ($params{'overwrite'})
+	{
+		$params{'overwrite'} =~ tr/01/FT/;
+		$request -> header('Overwrite' => $params{'overwrite'});
+	}
+		
 	my $response = $self -> {'ua'} -> request($request);
 	unless ($response -> is_success)
 	{
@@ -219,12 +230,19 @@ sub move
 	my $self     = shift;
 	my $uri      = shift;
 	my $dest_uri = shift;
+	my %params = @_;
 
 	my $request = HTTP::Request->new();
 	$request -> method('MOVE');
 	$request -> uri($self -> {'url'} . _clear_begining_slash($uri));
 	$request -> header('Destination' => $dest_uri);
 	
+	$request -> header('Depth' => $params{'depth'}) if $params{'depth'};
+	if ($params{'overwrite'})
+	{
+		$params{'overwrite'} =~ tr/01/FT/;
+		$request -> header('Overwrite' => $params{'overwrite'});
+	}
 	my $response = $self -> {'ua'} -> request($request);
 	unless ($response -> is_success)
 	{
@@ -310,27 +328,67 @@ This module doesn't uses PROPFIND and OPTIONS commands for work.
 
 =head1 METHODS
 
-=head2 new - Constructor
+=over 4
 
-    Create a new HTTP::DAV::Nginx object;
+=item B<new(URI, [PARAMS])>
+
+Create a new HTTP::DAV::Nginx object;
 
     my $dav = HTTP::DAV::Nginx -> new('http://host.org:8080/dav/');
     or 
     HTTP::DAV::Nginx -> new('http://host.org:8080/dav/', die_on_errors => 1);
 
-=head2 mkcol(uri) - creates a new dir at the location specified by the URI
+PARAMS:
+    die_on_errors - die if error
+    warn_on_errors - warn if error
 
-=head2 copy(src_uri, dest_uri) - creates a duplicate of the source resource identified by URI
 
-    src_uri - source URI
-    dest_uri - destination URI
+=item B<mkcol(URI)>
 
-=head2 move(src_uri, dest_uri) - used to move a resource to the location specified by a URI
+creates a new dir at the location specified by the URI
 
-    src_uri - source URI
-    dest_uri - destination URI
+=item B<copy(SRC_URI, DEST_URI)>
 
-=head2 put(uri, data_type => data) - used to put data in a new resource specified by a URI
+creates a duplicate of the source resource identified by URI
+
+
+C<SRC_URI> - source URI
+C<DEST_URI> - destination URI
+
+    $dav -> copy('/uri', '/uri2');
+
+PARAMS:
+=over 4
+
+=item C<depth> - copy depth (0, infinity)
+
+=item C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
+
+=back
+
+=item B<move(SRC_URI, DEST_URI, [PARAMS])>
+
+used to move a resource to the location specified by a URI
+
+C<SRC_URI> - source URI
+
+C<DEST_URI> - destination URI
+
+    $dav -> move('/uri', '/uri2');
+
+PARAMS:
+
+=over 4
+
+=item C<depth> - move depth (0, infinity)
+
+=item C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
+
+=back
+
+=item B<put(URI, DATA_TYPE => DATA)>
+
+used to put data in a new resource specified by a URI
 
     $dav -> put('/uri', data => 'Hello');
     or
@@ -338,18 +396,37 @@ This module doesn't uses PROPFIND and OPTIONS commands for work.
     or
     $dav -> put('/uri', fh => $fh);
 
-    data_type - type of data:
-      data - scalar data
-      file - filename
-      fh - filehandle
-    data - scalar data or filename or filehandle
-    
-=head2 delete(uri, ...) deletes a resource at the specified
+DATA_TYPE - type of data:
 
+=over 4
 
-=head2 useragent - return LWP::UserAgent object for custom options (i.e. proxy, cookie etc)
+=item C<data> - scalar data
 
-=head2 err - return last error string
+=item C<file> - filename
+
+=item C<fh> - filehandle
+
+=back
+
+DATA - scalar data or filename or filehandle
+
+=item B<delete(URI, [PARAMS])>
+
+deletes a resource at the specified
+
+    $dav -> delete('/uri');
+    or 
+    $dav -> delete('uri', depth => 'infinity');
+
+=item B<useragent>
+
+return LWP::UserAgent object for custom options (i.e. proxy, cookie etc)
+
+=item B<err>
+
+return last error string
+
+=back
 
 =head1 SEE ALSO
 

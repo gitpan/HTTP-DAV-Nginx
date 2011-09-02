@@ -7,7 +7,7 @@ use LWP::UserAgent;
 use HTTP::Request;
 use Carp;
 
-our $VERSION = '0.1.2';
+our $VERSION = '0.1.3';
 
 #-----------
 sub new
@@ -370,6 +370,7 @@ C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
 used to move a resource to the location specified by a URI
 
     $dav -> move('/uri', '/uri2');
+    $dav -> ('/uri', '/uri2', overwrite => 1);
 
 C<SRC_URI> - source URI
 
@@ -379,7 +380,7 @@ PARAMS:
 
 C<depth> - move depth (0, infinity)
 
-C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
+C<overwrite> - overwrite existing files (1 - overwrite, 0 - don't)
 
 =item B<put(URI, DATA_TYPE =E<gt> DATA)>
 

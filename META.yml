@@ -1,16 +1,17 @@
 --- #YAML:1.0
 name:               HTTP-DAV-Nginx
-version:            0.1.2
+version:            0.1.3
 abstract:           Client library for Nginx WebDAV server 
 author:
-    - root <root@nonet>
+    - Dmitry Kosenkov <d.kosenkov@rambler-co.ru>
 license:            unknown
 distribution_type:  module
 configure_requires:
     ExtUtils::MakeMaker:  0
 build_requires:
     ExtUtils::MakeMaker:  0
-requires:  {}
+requires:
+    LWP::UserAgent:  0
 no_index:
     directory:
         - t

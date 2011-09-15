@@ -7,7 +7,9 @@ use LWP::UserAgent;
 use HTTP::Request;
 use Carp;
 
-our $VERSION = '0.1.3';
+our $VERSION = '0.1.4';
+
+use constant C_BUF_SIZE => 8192;
 
 #-----------
 sub new
@@ -75,6 +77,20 @@ sub _clear_begining_slash
 
 	return $uri;
 }
+
+#------------------
+sub _read_file_cb
+#------------------
+{
+	my $fh = shift;
+	
+	my $buffer;
+	read($fh, $buffer, C_BUF_SIZE);
+	
+	return $buffer;
+}
+
+
 
 #----------
 sub err
@@ -152,6 +168,7 @@ sub put
 	$request -> uri($self -> {'url'} . _clear_begining_slash($uri));
 	
 	my $content;
+	my $fh;
 	
 	if (lc($data_type) eq 'data')
 	{	
@@ -159,25 +176,30 @@ sub put
 	}
 	elsif (lc($data_type) eq 'file')
 	{
-		open(FH, '<:raw', $data) or do
+
+		my $filename = $data;
+		
+		open($fh, '<:raw', $filename) or do
 		{
 			$self -> _error("Can't open file $data for reading");
 			return;
 		};
-		binmode(FH);
-		my $buffer;
-		while (read(FH, $buffer, 512))
-		{
-			$content .= $buffer;
-		}
+		binmode($fh);
+
+		$request -> header('Content-length' => -s $filename);
+
+		$content = sub { return _read_file_cb($fh) };
 	}
 	elsif (lc($data_type) eq 'fh')
-	{  
-		my $buffer;
-		while (read($data, $buffer, 512))
-		{
-			$content .= $buffer;
-		}
+	{
+		my $fh = $data;
+		my $filesize = (stat($fh))[7];
+
+		binmode($fh);
+		
+		$request -> header('Content-length' => $filesize);
+		
+		$content = sub { return _read_file_cb($fh) };
 	}
 	
 	$request -> content($content);
@@ -188,6 +210,8 @@ sub put
 		$self -> _error("METHOD:PUT URI:$uri Status:" . $response -> status_line);
 		return undef;
 	}
+	
+	close($fh) if $fh;
 	
 	return 1;
 }
@@ -250,30 +274,6 @@ sub move
 		return undef;
 	}
 	
-	return 1;
-}
-
-#OPTIONAL
-#------------
-sub symlink
-#------------
-{
-	my $self     = shift;
-	my $uri      = shift;
-	my $dest_uri = shift;
-
-	my $request = HTTP::Request->new();
-	$request -> method('SYMLINK');
-	$request -> uri($self -> {'url'} . _clear_begining_slash($uri));
-	$request -> header('Destination' => $dest_uri);
-	
-	my $response = $self -> {'ua'} -> request($request);
-	unless ($response -> is_success)
-	{
-		$self -> _error("METHOD:SYMLINK URI:$uri Status:" . $response -> status_line);
-		return undef;
-	}
-
 	return 1;
 }
 

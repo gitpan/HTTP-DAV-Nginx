@@ -7,7 +7,7 @@ use LWP::UserAgent;
 use HTTP::Request;
 use Carp;
 
-our $VERSION = '0.1.4';
+our $VERSION = '0.1.6';
 
 use constant C_BUF_SIZE => 8192;
 
@@ -60,7 +60,7 @@ sub _add_trailing_slash
 {
 	my $url = shift;
 	
-	$url =~ s|//\z||;
+	$url =~ s|/$||;
 
 	$url .= '/'; 
 
@@ -135,10 +135,10 @@ sub delete
 	$request -> method('DELETE');
 	$request -> uri($self -> {'url'} . _clear_begining_slash($uri));
 	
+	$request -> header('Depth' => $params{'depth'}) if defined $params{'depth'};
+
 	my $response = $self -> {'ua'} -> request($request);
 
-	$request -> header('Depth' => $params{'depth'}) if $params{'depth'};
-	
 	unless ($response -> is_success)
 	{
 		$self -> _error("METHOD:DELETE URI:$uri Status:" . $response -> status_line);
@@ -205,13 +205,12 @@ sub put
 	$request -> content($content);
 
 	my $response = $self -> {'ua'} -> request($request);
+
 	unless ($response -> is_success)
 	{
 		$self -> _error("METHOD:PUT URI:$uri Status:" . $response -> status_line);
 		return undef;
 	}
-	
-	close($fh) if $fh;
 	
 	return 1;
 }
@@ -230,8 +229,8 @@ sub copy
 	$request -> uri($self -> {'url'} . _clear_begining_slash($uri));
 	$request -> header('Destination' => $dest_uri);
 	
-	$request -> header('Depth' => $params{'depth'}) if $params{'depth'};
-	if ($params{'overwrite'})
+	$request -> header('Depth' => $params{'depth'}) if defined $params{'depth'};
+	if (defined $params{'overwrite'})
 	{
 		$params{'overwrite'} =~ tr/01/FT/;
 		$request -> header('Overwrite' => $params{'overwrite'});
@@ -261,8 +260,8 @@ sub move
 	$request -> uri($self -> {'url'} . _clear_begining_slash($uri));
 	$request -> header('Destination' => $dest_uri);
 	
-	$request -> header('Depth' => $params{'depth'}) if $params{'depth'};
-	if ($params{'overwrite'})
+	$request -> header('Depth' => $params{'depth'}) if defined $params{'depth'};
+	if (defined $params{'overwrite'})
 	{
 		$params{'overwrite'} =~ tr/01/FT/;
 		$request -> header('Overwrite' => $params{'overwrite'});
@@ -370,7 +369,7 @@ C<owerwrite> - overwrite existing files (1 - overwrite, 0 - don't)
 used to move a resource to the location specified by a URI
 
     $dav -> move('/uri', '/uri2');
-    $dav -> ('/uri', '/uri2', overwrite => 1);
+    $dav -> move('/uri', '/uri2', overwrite => 1);
 
 C<SRC_URI> - source URI
 
@@ -423,7 +422,7 @@ LWP::UserAgent
 
 =head1 AUTHOR
 
-Dmitry Kosenkov, E<lt>d.kosenkov@rambler-co.ru<gt>, E<lt>junker@front.ru<gt>
+Dmitry Kosenkov, C<< <d.kosenkov AT rambler-co.ru> >>, C<< <junker AT front.ru> >>
 
 =head1 COPYRIGHT AND LICENSE
 

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               HTTP-DAV-Nginx
-version:            0.1.4
+version:            0.1.6
 abstract:           Client library for Nginx WebDAV server 
 author:
     - Dmitry Kosenkov <d.kosenkov@rambler-co.ru>
